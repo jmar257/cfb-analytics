@@ -14,7 +14,7 @@ games <- read.csv("~/2005-2013.csv")
 #games$Site.Dummy <- ifelse(games$Site == "Home", 1, 0)
 games$Team.Code <- as.factor(games$Team.Code)
 
- games <- games[, !names(games) %in% c("Points")]#"Home.Team.Code", 
+games <- games[, !names(games) %in% c("Points")]#"Home.Team.Code", 
 #   "Date", "Game.Code", "Visit.Team.Code", 
 #   "Stadium.Code", "Site",
 #   "Duration", "Stadium", "Attendance", "City",
@@ -43,6 +43,10 @@ drop.factors <- function (df, column, threshold) {
   df 
 }
 
+roll <- function(x, n) { 
+  rollapply(x, list(-seq(n)), mean, fill = NA)
+}
+
 
 games <- games[complete.cases(games),]
 games <- drop.factors(games, "Team.Code", 26)
@@ -55,33 +59,44 @@ games <- arrange(games, Team.Code, as.Date(games$Date, format="%m/%d/%Y"))
 games.mav <- games
 games.mav <- games[,0:9]
 
+# for (i in ncol(games[,10:74])){
+#   j <- i + 9
+#   games.mav[, j] <- transform(games, colnames(games)[j] = ave(colnames(games)[j], FUN = function(x) roll(x, 26)))
+# }
+
+games.mav[,10:74] <- apply(games[, 10:74], 2, function(x) x = ave(games[, 10:74], games$Team.Code, FUN = function(x) roll(x, 26)))
+
+#games.mav[,10:74] <- apply(games[,10:74], 2, 
+#                           function(x) transform(games, x = ave(x, FUN = function(x) roll(x, 26))))
 #new.row <- data.frame(A=11, B="K", stringsAsFactors=F)
 #games <- rbind.fill(games, new.row)
 
-for(i in seq(length(games[,10:74]))){
-  j <- i + 9
-  #games[,j] <- lag(games[,j], n=1)
-  games.mav[,j] <- as.vector(ave(games[,j], games$Team.Code, 
-                  FUN= function(x) rollmean(x, k=26, align="right", na.pad=TRUE) ))
-}
+# for(i in seq(length(games[,10:74]))){
+#   j <- i + 9
+#   #games[,j] <- lag(games[,j], n=1)
+#   games.mav[,j] <- as.vector(ave(games[,j], games$Team.Code, 
+#                   FUN= function(x) rollmean(x, k=26, align="right", na.pad=TRUE) ))
+# }
 
 #games[,10:76] <- as.data.frame(apply(games[,10:12], 2, SMA, n=26))
 
 #skoo <- ddply(games, .(Team.Code), transform, Pass.Yard.mav = SMA(games$Pass.Yard, n = 26))
 
 #games.mav$Site.Dummy <- games$Site.Dummy
+games.mav <- as.data.frame(games.mav)
 colnames(games.mav) <- colnames(games)
 games.mav <- games.mav[complete.cases(games.mav),]
+write.csv(games.mav, file = "~/games mav.csv")
 
 #wins <- games$Home.Win
 #games.mav[,10:75] <- scale(games.mav[,10:75], center = TRUE, scale = TRUE)
-games.mav <- as.data.frame(games.mav)
+
 #games$Home.Win <- wins
 
 games.pca <- prcomp(games.mav[,10:74],
                     center = TRUE,
                     scale. = TRUE)#,
-                    #tol = .6)
+#tol = .6)
 
 plot(games.pca, type = "l")
 pca2d( games.pca, biplot= TRUE, shape= 19, col= "black"  )
