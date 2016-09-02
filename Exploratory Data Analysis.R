@@ -8,13 +8,12 @@ library(zoo)
 library(reshape2)
 library(TTR)
 library(dplyr)
-library( pca3d )
+library(pca3d)
 
 games <- read.csv("~/2005-2013.csv")
-#games$Site.Dummy <- ifelse(games$Site == "Home", 1, 0)
 games$Team.Code <- as.factor(games$Team.Code)
 
-games <- games[, !names(games) %in% c("Points")]#"Home.Team.Code", 
+#games <- games[, !names(games) %in% c("Points")]#"Home.Team.Code", 
 #   "Date", "Game.Code", "Visit.Team.Code", 
 #   "Stadium.Code", "Site",
 #   "Duration", "Stadium", "Attendance", "City",
@@ -53,55 +52,51 @@ games <- drop.factors(games, "Team.Code", 26)
 
 games <- arrange(games, Team.Code, as.Date(games$Date, format="%m/%d/%Y"))
 
-# games$mav.Pass.Yard <- ddply(games, "Team.Code", 
-#              last26 = rollmean(x, 3, align="right", fill = NA))
-
 games.mav <- games
 games.mav <- games[,0:9]
 
-# for (i in ncol(games[,10:74])){
-#   j <- i + 9
-#   games.mav[, j] <- transform(games, colnames(games)[j] = ave(colnames(games)[j], FUN = function(x) roll(x, 26)))
-# }
+games.mav[,10:length(colnames(games))] <- apply(games[, 10:length(colnames(games))], 2, function(x) x = ave(x, games$Team.Code, FUN = function(y) roll(y, 26)))
 
-games.mav[,10:74] <- apply(games[, 10:74], 2, function(x) x = ave(games[, 10:74], games$Team.Code, FUN = function(x) roll(x, 26)))
-
-#games.mav[,10:74] <- apply(games[,10:74], 2, 
-#                           function(x) transform(games, x = ave(x, FUN = function(x) roll(x, 26))))
-#new.row <- data.frame(A=11, B="K", stringsAsFactors=F)
-#games <- rbind.fill(games, new.row)
-
-# for(i in seq(length(games[,10:74]))){
-#   j <- i + 9
-#   #games[,j] <- lag(games[,j], n=1)
-#   games.mav[,j] <- as.vector(ave(games[,j], games$Team.Code, 
-#                   FUN= function(x) rollmean(x, k=26, align="right", na.pad=TRUE) ))
-# }
-
-#games[,10:76] <- as.data.frame(apply(games[,10:12], 2, SMA, n=26))
-
-#skoo <- ddply(games, .(Team.Code), transform, Pass.Yard.mav = SMA(games$Pass.Yard, n = 26))
-
-#games.mav$Site.Dummy <- games$Site.Dummy
 games.mav <- as.data.frame(games.mav)
 colnames(games.mav) <- colnames(games)
 games.mav <- games.mav[complete.cases(games.mav),]
-write.csv(games.mav, file = "~/games mav.csv")
+write.csv(games.mav, file = "~/games mav.csv", row.names = FALSE)
 
-#wins <- games$Home.Win
-#games.mav[,10:75] <- scale(games.mav[,10:75], center = TRUE, scale = TRUE)
-
-#games$Home.Win <- wins
-
-games.pca <- prcomp(games.mav[,10:74],
+#PRINCIPAL COMPONENT ANALYSIS
+games.pca <- prcomp(games.mav[,10:length(colnames(games.mav))],
                     center = TRUE,
-                    scale. = TRUE)#,
+                    scale. = TRUE)#
 #tol = .6)
+
+
 
 plot(games.pca, type = "l")
 pca2d( games.pca, biplot= TRUE, shape= 19, col= "black"  )
 
-write.csv(games.pca$rotation, file = "~/factor loadings.csv")
+write.csv(games.pca$rotation, file = "~/factor loadings.csv", row.names = FALSE)
+
+#CENTER AND SCALE
+games.mav[,10:length(colnames(games.mav))] <- scale(games.mav[,10:length(colnames(games.mav))], center = TRUE, scale = TRUE)
+write.csv(games.mav, file = "~/standardized games mav.csv", row.names = FALSE)
+
+#REGRESSION ON RUSH TDS
+fit <- lm(Rush.TD ~ Rush.Yard, data=games)
+summary(fit)
+coefficients(fit) # model coefficients
+confint(fit, level=0.95) # CIs for model parameters 
+fitted(fit) # predicted values
+residuals(fit) # residuals
+anova(fit) # anova table 
+vcov(fit) # covariance matrix for model parameters 
+influence(fit) # regression diagnostics
+
+#CLUSTER ANALYSIS
+set.seed(69)
+games.cluster <- kmeans(games.mav[, 10:length(colnames(games.mav))], 5, nstart = 20)
+games.cluster
+
+games.cluster$cluster <- as.factor(games.cluster$cluster)
+ggplot(games.mav, aes(Penalty.Yard, Rush.Att, color = games.cluster$cluster)) + geom_point()
 
 #LOGISTIC REGRESSION
 model <- glm(Home.Win ~ Home.Pass.Yard + Home.Rush.Yard + Home.Sack
