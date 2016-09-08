@@ -6,7 +6,7 @@ library(magrittr)
 library(randomForest)
 library(caTools)
 
-games <- read.csv("~/games mav.csv")
+games.mav <- read.csv("~/games mav.csv")
 
 #CENTER AND SCALE
 games.mav[,11:75] <- scale(games.mav[,11:75], center = TRUE, scale = TRUE)
@@ -19,10 +19,10 @@ train <- games.mav[x,]
 test <- games.mav[!x,]
 
 #LOGISTIC REGRESSION
-model <- glm(Win ~ Pass.Yard + Rush.Yard + Sack + Time.Of.Possession + Tackle.Solo 
-             + Tackle.Assist + Kickoff,family=binomial(link='logit'),data=train)
+model <- glm(Win ~ Pass.Yard + Rush.Yard + Sack.Yard + Time.Of.Possession + Tackle.Solo 
+             + Tackle.Assist + Kickoff.Yard,family=binomial(link='logit'),data=train)
 summary(model)
-prob <- predict(model, test[,11:75])
+prob <- predict(model, test[,11:50])
 test$prob <- as.numeric(prob)
 
 g <- roc(Win ~ prob, data = test)
@@ -59,7 +59,7 @@ test$Win <- as.factor(test$Win)
 
 forest <- randomForest(formula = train$Win ~ . , data = train[,11:75], ntree = 100)
 
-forest.prediction <- predict(forest, test)
+forest.prediction <- predict(forest, test[,11:75])
 test$forest.prediction <- forest.prediction
 
 confusionMatrix(test$forest.prediction, test$Win, positive = '1')
