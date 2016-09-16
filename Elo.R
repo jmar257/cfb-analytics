@@ -1,6 +1,8 @@
 library(PlayerRatings)
 library(dplyr)
 library(plyr)
+library(magrittr)
+library(ggvis)
 
 games <- read.csv("~/2005-2013 Unique Game Weeks.csv")
 teams <- read.csv("~/team.csv")
@@ -23,8 +25,18 @@ ratings <- games.elo$ratings
 history <- as.data.frame(t(as.data.frame(games.elo$history)))
 history <- history[1:137, ]
 
-team <- "Clemson"
+team <- "Duke"
+team2 <- "Clemson"
 
 plot(x = 1:length(history[, team]), y = history[, team], type='c', xlab = team,
-     ylab = 'Elo Rating')
-lines(history[, team])
+     ylab = 'Elo Rating', xlim=c(1, 137), ylim=c(1200, 1950))
+lines(history[, team], col = "red")
+lines(history[, team2], col = "orange")
+
+for(i in 1:217) {
+  lines(history[, i])
+}
+
+lines(1:137, rep(1500, 137), col = "yellow")
+
+

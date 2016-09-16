@@ -18,7 +18,7 @@ numweeks <- length(unique(games$Unique.Week))
 
 games.for.elo <- games.for.elo[games.for.elo$Unique.Week < numweeks,]
 
-games.elo <- elo(games.for.elo, init = 1500, k = 30, sort = TRUE, history = TRUE)
+games.elo <- elo(games.for.elo, init = 1300, k = 23, sort = TRUE, history = TRUE)
 ratings <- games.elo$ratings
 history <- as.data.frame(t(as.data.frame(games.elo$history)))
 history <- history[1:(numweeks-1), ]
