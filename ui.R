@@ -39,7 +39,7 @@ shinyUI(
     
     mainPanel(
       ggvisOutput("ggvis"),
-      helpText('Fuck you')
+      helpText('')
     )
     ))
   
