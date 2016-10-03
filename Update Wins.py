@@ -19,7 +19,7 @@ url2 = "http://www.cbssports.com/college-football/scoreboard/fbs/{0}/regular/{1}
 old_games = pd.read_csv(path + "/FBS Data.csv")
 
 year = 2016
-week = 3
+week = 4
 un_week = np.max(old_games['Unique Week']) + 1
 BASE_URL = url2
 
@@ -60,12 +60,12 @@ for table in tables:
     home_ranking = "NR"
     away_ranking = "NR"
     if home[0].isnumeric():
-        home_ranking = "".join([letter for letter in home[:2] if letter.isnumeric() or letter.isspace()])
-    home = "".join([letter for letter in home if letter.isalpha()])
+        home_ranking = "".join([letter for letter in home[:2] if letter.isnumeric()]).strip()
+    home = "".join([letter for letter in home if letter.isalpha() or letter.isspace()]).strip()
     away = str(table.iloc[away_row,0]) 
     if away[0].isnumeric():
-        away_ranking = "".join([letter for letter in away[:2] if letter.isnumeric() or letter.isspace()])
-    away = "".join([letter for letter in away if letter.isalpha()])
+        away_ranking = "".join([letter for letter in away[:2] if letter.isnumeric()]).strip()
+    away = "".join([letter for letter in away if letter.isalpha() or letter.isspace()]).strip()
     home_team.append(home)
     home_score.append(str(int(table.iloc[home_row, -1])))
     away_team.append(away)
@@ -95,3 +95,13 @@ updated_games = updated_games[["Week", "Unique Week", "Season",  "Date", "Home R
 
 updated_games.to_csv(path + "/FBS Data.csv", index = False)
 updated_games.to_csv(path + "/Other/FBS Data Backup Thru Week " + str(week) + ".csv", index = False)
+
+all_data = pd.read_csv(path + "/All FBS Data.csv", low_memory = False)
+
+all_data_updated = pd.concat([all_data, new_games])
+
+all_data_updated = all_data_updated[["Week", "Unique Week", "Season",  "Date", "Home Ranking", "Home Team", "Home Score", "Away Ranking", "Away Team", "Away Score", "OT", "Location"]]
+
+#DATES STOPPED BEING SCRAPED AFTER WEEK 2 2016 (WEEK 221), AFTER THAT MANUALLY UPDATED WITH THAT 
+#SATURDAY'S DATE
+all_data_updated.to_csv(path + "/All FBS Data.csv", index = False)
